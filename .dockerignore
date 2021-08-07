@@ -1,0 +1,5 @@
+src/.venv
+Dockerfile
+docker-compose.yml
+.gitignore
+__pycache__

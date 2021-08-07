@@ -1,0 +1,5 @@
+falcon
+psycopg2
+sqlalchemy
+alembic
+uwsgi

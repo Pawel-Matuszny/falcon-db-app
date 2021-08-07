@@ -1,0 +1,62 @@
+image:
+  name: docker/compose
+  entrypoint: [""]
+
+variables:
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_TLS_CERTDIR: ""
+  GCP_PROJECT_ID: pawel-matuszny-2
+  PROJECT_NAME: pawel-db-app
+  IMAGE: eu.gcr.io/pawel-matuszny-2/pawel-db-app
+  VERSION: ver1.0
+  COMPOSE: docker-compose -p pawel-db-app
+  ZONE: europe-central2-c
+  CLUSTER_NAME: pawel-cluster
+  
+
+stages:
+  - test
+  - push
+  - deploy
+  
+Lint:
+  image: hadolint/hadolint:latest-debian
+  stage: test
+  only:
+    - main
+    - deploy_app
+    - merge_requests
+  script:
+    - hadolint --config $PWD/hadolint.yaml Dockerfile
+
+
+push Docker to gcr:
+  stage: push
+  services:
+    - docker:dind
+  only:
+    - main
+    - deploy_app
+  script:
+    - docker login -u _json_key -p "$GCLOUD_SERVICE_KEY2" https://eu.gcr.io
+    - docker pull $IMAGE:$VERSION
+    - $COMPOSE build --pull
+    - echo "Built succesfully"
+    - docker push $IMAGE:$VERSION
+    - echo "Pushed succesfully"
+
+deploy:
+  stage: deploy
+  image: google/cloud-sdk
+  only:
+    - main
+    - deploy_app
+  script:
+    - echo $GCLOUD_SERVICE_KEY2 > ~/encoded_serviceaccount.json
+    - gcloud auth activate-service-account --key-file ~/encoded_serviceaccount.json
+    - gcloud config set project $GCP_PROJECT_ID
+    - gcloud config set compute/zone $ZONE
+    - gcloud container clusters get-credentials $CLUSTER_NAME
+    - kubectl patch deployment $PROJECT_NAME -p "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"build\":\"$CI_COMMIT_SHORT_SHA\"}}}}}}"
+    - kubectl apply -f kubernetes/.
+    - echo "Deployed succesfully"

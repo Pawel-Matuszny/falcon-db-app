@@ -1,0 +1,29 @@
+version: '3.3'
+services:
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    volumes:
+      - database-data:/var/lib/postgresql/data/ 
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+  app:
+    build: 
+      context: .
+      args:
+        UID: "${APP_UID}"
+      cache_from: 
+        - "eu.gcr.io/pawel-matuszny-2/pawel-db-app:ver1.0"
+    env_file: .env
+    ports:
+      - "80:80"
+    volumes:
+      - .:/app
+    image: eu.gcr.io/pawel-matuszny-2/pawel-db-app:ver1.0
+    depends_on:
+      - db
+volumes:
+  database-data:

@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: pawel-db-app
+  labels:
+    app: falcon
+spec:
+  selector:
+    matchLabels:
+      app: falcon
+  template:
+    metadata:
+      labels:
+        app: falcon
+    spec:
+      containers:
+        - name: pawel-db-app
+          image: "eu.gcr.io/pawel-matuszny-2/pawel-db-app:ver1.0"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: pawel-db-config
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "500m"
+            limits:
+              memory: "128Mi"
+              cpu: "600m"
+      imagePullSecrets:
+        - name: gcr-json-key
